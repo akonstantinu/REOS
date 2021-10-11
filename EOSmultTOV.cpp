@@ -14,14 +14,13 @@ using namespace std;
   
 class findParameter {
 public:
-  double p1;
+  double p0;
   double Gamma1;
   double Gamma2;
   double Gamma3;
   double K1;
   double K2;
   double K3;
-  double p2;
   double rho1;
   double rho2;
   double rho0;
@@ -30,17 +29,17 @@ public:
   double a3;
   
   void setParameters(double pa1,double pa2,double pa3,double pa4,double pa5, double par6, double par7){
-    p1=TMath::Power(10,pa1)*kappa*G/(c*c*c*c);
+    p0=TMath::Power(10,pa1)*kappa*G/(c*c*c*c);
     Gamma1=pa2;
     Gamma2=pa3;
     Gamma3=pa4;
+    rho0=pa5*kappa*G/(c*c);
     rho1= par6*2.28*TMath::Power(10,14)*kappa*G/(c*c);
     rho2= par7*2.28*TMath::Power(10,14)*kappa*G/(c*c);
-    K1=p1/TMath::Power(rho1,Gamma1);
-    K2=p1/TMath::Power(rho1,Gamma2);
+    K1=p0/TMath::Power(rho0,Gamma1);
+    K2=K1*TMath::Power(rho1,Gamma1-Gamma2);
     K3=K2*TMath::Power(rho2,Gamma2-Gamma3);
-    p2=K2*TMath::Power(rho2,Gamma2);
-    rho0=pa5*kappa*G/(c*c);
+
   }
 
   void setAlphas(double ec, double dc,double pc){
@@ -138,7 +137,7 @@ public:
 
   double f(double p,double en){
   
-    return 1./(en*(kappa*G)/(c*c)+(p*(G*kappa)/(c*c*c*c)));
+    return 1./(en*kappa*G/(c*c)+p*G*kappa/(c*c*c*c));
   }
 
 
@@ -166,7 +165,7 @@ public:
       }
     }
 
-    integr=h0+integr*dx*(kappa*G)/(c*c*3.);
+    integr=h0+integr*dx/(c*c*3.);
  
      
     return integr;
@@ -178,7 +177,7 @@ public:
   bool soundSpeed(double p,double d){
 
     if(d<=rho1){
-      if(TMath::Sqrt(Gamma1*p/(e(d)+p))>1){
+      if(TMath::Sqrt(Gamma1*p/(e(d)+p))>1.){
 	return false;
       }
       else{
@@ -186,7 +185,7 @@ public:
       }
     }
     else if(d>rho1&&d<rho2){
-      if(TMath::Sqrt(Gamma2*p/(e(d)+p))>1){
+      if(TMath::Sqrt(Gamma2*p/(e(d)+p))>1.){
 	return false;
       }
       else{
@@ -194,7 +193,7 @@ public:
       }
     }
     else if(d>=rho2){
-      if(TMath::Sqrt(Gamma3*p/(e(d)+p))>1){
+      if(TMath::Sqrt(Gamma3*p/(e(d)+p))>1.){
 	return false;
       }
       else{
@@ -293,91 +292,125 @@ public:
       return (r*TMath::Power(kappa,0.5))/100000.;//Radius
     }
   }
+
+  bool CheckDownRange(double p, double d){
+    double r1= 2.5*2.28*TMath::Power(10,14)*kappa*G/(c*c);
+    double r2= 4.0*2.28*TMath::Power(10,14)*kappa*G/(c*c);
+    double Gam1=1.5;
+    double Gam2=6;
+    double Gam3=3;
+    double Kappa1=p0/TMath::Power(rho0,Gam1);
+    double Kappa2=Kappa1*TMath::Power(r1,Gam1-Gam2);
+    double Kappa3=Kappa2*TMath::Power(r2,Gam2-Gam3);
+    if(d<r1){
+      if(p>Kappa1*TMath::Power(d,Gamma1)){
+	return true;
+      }
+      else{
+	return false;
+      }
+    }
+    else if (d>r1 && d<r2){
+      if(p>Kappa2*TMath::Power(d,Gamma2)){
+	return true;
+      }
+      else{
+	return false;
+      }
+    }
+    else if (d>r2){
+      if(p>Kappa3*TMath::Power(d,Gamma3)){
+	return true;
+      }
+      else{
+	return false;
+      }
+    }
+	
+  }
   
+  bool CheckUpRange(double p, double d){
+    double r1= 1.5*2.28*TMath::Power(10,14)*kappa*G/(c*c);
+    double r2= 2.0*2.28*TMath::Power(10,14)*kappa*G/(c*c);
+    double Gam1=4.5;
+    double Gam2=5.5;
+    double Gam3=3;
+    double Kappa1=p0/TMath::Power(rho0,Gam1);
+    double Kappa2=Kappa1*TMath::Power(r1,Gam1-Gam2);
+    double Kappa3=Kappa2*TMath::Power(r2,Gam2-Gam3);
+    if(d<r1){
+       if(p<Kappa1*TMath::Power(d,Gamma1)){
+	return true;
+      }
+      else{
+	return false;
+      }
+    }
+    else if (d>r1 && d<r2){
+      if(p<Kappa2*TMath::Power(d,Gamma2)){
+	return true;
+      }
+      else{
+	return false;
+      }
+    }
+    else if (d>r2){
+      if(p<Kappa3*TMath::Power(d,Gamma3)){
+	return true;
+      }
+      else{
+	return false;
+      }
+    }
+  }
   
 };
 
 
 
-void EOSmultTOV(){
-  int num;
-  cout<<"Give the number of EOS"<<endl;
-  cin>>num;
+void EOSmultTOV(){//Main Program
 
+
+
+
+
+
+  
   ofstream eosTable;
   eosTable.open("EosTable",ios::out);
-  eosTable<<"EOS  log(p1) log(dyne/cm^2)  Gamma1  Gamma2  Gamma3 rho1 (g/cm^3) rho2 (g/cm^3)  Surface EOS"<<endl;
+  eosTable<<"EOS  log(p0) log(dyne/cm^2)  Gamma1  Gamma2  Gamma3 rho1 (g/cm^3) rho2 (g/cm^3)  Surface EOS"<<endl;
   bool Continue= false;
 
   //choose surface EOS
   vector<string> surfEOS;
   surfEOS.push_back("eosNV");
   surfEOS.push_back("eosFPS");
-  int sEOSnum=1;//0 = NV   1 = FPS
+  surfEOS.push_back("eosBBB2");
   int fileNum=0;
 
 
-  double d0=1.58489*TMath::Power(10,15)*kappa*G/(c*c);//central density (rho not e)
 
+  //Number of random EOS
+  int num;
+  cout<<"Give the number of EOS"<<endl;
+  cin>>num;
+  
+  //choose crust EOS
+  int sEOSnum=0;//0 = NV   1 = FPS 2 = BBB2
+
+  //choose crust density
+  double d_crust = 1.1*2.28*TMath::Power(10,14);
+  
+  //normilized central mass density
+  double d0=8.3*2.28*TMath::Power(10,14)*kappa*G/(c*c);
+
+  //Maximum Mass
+  double Max_mass=1.97; //solar masses
+
+  
   //Random EOS Generation Begins
   while(fileNum<num){
-    
-
-
-    findParameter fp;
-    double par1,par2,par3,par4,par5,par6,par7;
-    TRandom3* rand =new TRandom3();
-    rand->SetSeed(0);
-    par1=/*34.331;*/rand->Uniform(34,35);//log(p1)
-    par2=/*3.418;*/rand->Uniform(1.5,4.5);//Gamma1
-    par3=/*2.835;*/rand->Uniform(3,6);//Gamma2
-    par4=/*2.832;*/rand->Uniform(2.5,3);//Gamma3
-    par6=/*2.198189621;*/rand->Uniform(1.5,3);//rho1*2.28 10^14 g/cm^3
-    par7=/*4.385964912;*/rand->Uniform(TMath::Max(2.00,par6),4);//rho2*2.28 10^14 g/cm^3
-
-
-
-
-    //finds the core-crust density "border"
-    if(sEOSnum==0){//y=1.5x+11.6
-      par5=TMath::Power(10,(11.6-TMath::Log10(TMath::Power(10,par1)/(TMath::Power(par6*2.28*TMath::Power(10,14),par2))))/(par2-1.5));//rho0
-      if((par5<=TMath::Power(10,14.35)) && (par5>=TMath::Power(10,12.2967))){
-	Continue=true;
-      }
-      else{
-	Continue=false;
-      }
-    }
-    else if(sEOSnum==1){//y=2.56x-3.37
-      par5=TMath::Power(10,(-3.37-TMath::Log10(TMath::Power(10,par1)/(TMath::Power(par6*2.28*TMath::Power(10,14),par2))))/(par2-2.56));//rho0
-      if((par5>=TMath::Power(10,14.35)) && (par5<=par6*2.28*TMath::Power(10,14))/*(par5<=TMath::Power(10,16.22))*/){
-	Continue=true;
-      }
-      else if(par5<TMath::Power(10,14.35)){
-	par5=TMath::Power(10,(11.6-TMath::Log10(TMath::Power(10,par1)/(TMath::Power(par6*2.28*TMath::Power(10,14),par2))))/(par2-1.5));//rho0
-	if((par5<=TMath::Power(10,14.35)) && (par5>=TMath::Power(10,12.2967))){
-	  Continue=true;
-	}
-	else{
-	  Continue=false;
-	}
-      }
-      else{ 
-	Continue=false;
-      }
-
-    }
-
-    
-    if(!Continue) continue;
-
-
-    //call class
-    fp.setParameters(par1,par2,par3,par4,par5,par6,par7);
-
-
-
-
+       
     //Take the Surface EOS - Begining
     bool BoolSpeed=true;
     int count=0;
@@ -401,7 +434,7 @@ void EOSmultTOV(){
 	getline(liness,a3,' ');
 	getline(liness,a4,' ');
 	if(sEOSnum==0){getline(liness,a5,' ');}
-	if((stod(a4)*1.66*TMath::Power(10,-24))>(fp.rho0*c*c/(kappa*G))) break;
+	if((stod(a4)*1.66*TMath::Power(10,-24))>(d_crust)) break;
 	v_e.push_back(stod(a1));
 	v_p.push_back(stod(a2));
 	v_h.push_back(stod(a3));
@@ -416,7 +449,25 @@ void EOSmultTOV(){
     data=v_e.size();
     count=0;
     //Take the Surface EOS -END
- 
+
+
+    findParameter fp;
+    double par1,par2,par3,par4,par5,par6,par7;
+    TRandom3* rand =new TRandom3();
+    rand->SetSeed(0);
+    par1=/*34.331;*/TMath::Log10(v_p.at(v_p.size()-1));//log(p0)
+    par2=/*4.5;*/rand->Uniform(1,4.5);//Gamma1
+    par3=/*2.835;*/rand->Uniform(0,8);//Gamma2
+    par4=/*2.832;*/rand->Uniform(0.5,8);//Gamma3
+    par5=v_d.at(v_d.size()-1)/*1.1*2.28*TMath::Power(10,14)*/;//rho0
+    par6=/*2.198189621;*/rand->Uniform(1.5,8);//rho1*2.28 10^14 g/cm^3
+    par7=/*4.385964912;*/rand->Uniform(par6,8.3);//rho2*2.28 10^14 g/cm^3
+
+    //call class
+    fp.setParameters(par1,par2,par3,par4,par5,par6,par7);
+
+
+    
     fp.setAlphas(vEnergyDensity.at(data-1),vDensity.at(data-1),vPressure.at(data-1));
 
 
@@ -425,19 +476,19 @@ void EOSmultTOV(){
 
     
     //EOS Begining
-    double stepsize=(d0-fp.rho0)/22.;
+    double stepsize=(d0-fp.rho0)/28.;
     double p0,d,p;
-    d=fp.rho0/*+fp.rho0*0.2*/;
+    d=1.1*2.28*TMath::Power(10,14)*(G*kappa)/(c*c)/*+fp.rho0*0.2*/;
     p=fp.pressure(d);
     bool CheckCont=true;
-
+    bool up=true;
+    bool down=true;
     
     while(d<=d0){
  
 	v_d.push_back(d*c*c/(G*kappa));
 	v_p.push_back(p*c*c*c*c/(G*kappa));
 	v_e.push_back(fp.e(d)*c*c/(G*kappa));
-
 	
 	vPressure.push_back(p);
 	vEnergyDensity.push_back(fp.e(d));
@@ -452,7 +503,11 @@ void EOSmultTOV(){
 	}
 	
       BoolSpeed=fp.soundSpeed(p,d);
+      up=fp.CheckUpRange(p,d);
+      down=fp.CheckDownRange(p,d);
       if(!BoolSpeed)break;
+      if(!up)break;
+      if(!down)break;
       d=d+stepsize;
       p=fp.pressure(d);
       count++;
@@ -464,6 +519,8 @@ void EOSmultTOV(){
     
 
     //Check the speed of sound
+    if(!up) continue;
+    if(!down) continue;
     if(!BoolSpeed) continue;
     if(!CheckCont) continue;
 
@@ -481,12 +538,12 @@ void EOSmultTOV(){
     
 
     //check the Maximum Mass
-    if(fp.maxMassOrRadius(vDensity,vPressure,vEnergyDensity,0)>1.97) continue;
+    if(fp.maxMassOrRadius(vDensity,vPressure,vEnergyDensity,0)>Max_mass) continue;
 
-    
+ 
     //Write EOS parameters Begining
     string title="";
-    title=title+"eosSA"+fileNum;
+    title=title+"eosPol"+fileNum;
     fileNum++;
     eosTable<<title<<" "<<par1<<" "<<par2<<" "<<par3<<" "<<par4<<" "<<fp.rho1*c*c/(kappa*G)<<" "<<fp.rho2*c*c/(kappa*G)<<" "<<surfEOS.at(sEOSnum)<<" "<<endl;
     ofstream output;

@@ -23,21 +23,22 @@ void plot(){
   string a1,a2,a3,a4,a5;
   int data;
 
+  
   //Plot limits 
-  v4.push_back(TMath::Power(10,11));
-  v2.push_back(TMath::Power(10,30));
-  v4.push_back(TMath::Power(10,11));
-  v2.push_back(TMath::Power(10,39));
-  v4.push_back(TMath::Power(10,15.5));
-  v2.push_back(TMath::Power(10,30));
-  v4.push_back(TMath::Power(10,15.5));
-  v2.push_back(TMath::Power(10,39));
-
+  v4.push_back(TMath::Power(10,14));
+  v2.push_back(TMath::Power(10,32));
+  v4.push_back(TMath::Power(10,14));
+  v2.push_back(TMath::Power(10,36.4));
+  v4.push_back(TMath::Power(10,15.7));
+  v2.push_back(TMath::Power(10,32));
+  v4.push_back(TMath::Power(10,15.7));
+  v2.push_back(TMath::Power(10,36.4));
+  
   
   TGraph* eos =new TGraph(v2.size(),&v4.at(0),&v2.at(0));
   eos->SetTitle("Eos");
   eos->GetYaxis()->SetTitle("Pressure (dynes/cm^2)");
-  eos->GetXaxis()->SetTitle("Density (gr/cm^3)");
+  eos->GetXaxis()->SetTitle("Energy density (gr/cm^3)");
   eos->SetLineColor(0);
   eos->SetMarkerColor(0);
   eos->SetMarkerStyle(20);
@@ -45,12 +46,11 @@ void plot(){
 
   eos->Draw("AP");
 
-
-
   v1.clear();
   v2.clear();
   v3.clear();
   v4.clear();
+  
   //rest
   TRandom3* rand =new TRandom3();
   rand->SetSeed(0);
@@ -60,7 +60,7 @@ void plot(){
   for(int k=0;k<num;k++){
     
     string title="";
-    title=title+"eosSA"+k;
+    title=title+"eosPol"+k;
     ifstream myinput;
     
     myinput.open(title,ios::in);
@@ -89,8 +89,9 @@ void plot(){
     count=0;
   
  
-    TGraph* eos1 =new TGraph(v2.size(),&v4.at(0),&v2.at(0));
-    eos1->SetLineColor(int(rand->Uniform(0.5,9.5)));
+    TGraph* eos1 =new TGraph(v2.size(),&v1.at(0),&v2.at(0));
+    //eos1->SetLineColor(int(rand->Uniform(0.5,9.5)));
+    eos1->SetLineColor(k+1);
     eos1->SetMarkerColor(k+1);
     eos1->SetMarkerStyle(20);
     eos1->SetMarkerSize(1.5);
