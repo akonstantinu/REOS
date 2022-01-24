@@ -1,1 +1,1 @@
-# REOS
+# Polytropes
